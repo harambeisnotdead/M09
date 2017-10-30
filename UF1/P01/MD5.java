@@ -6,19 +6,22 @@ public class MD5 {
 
     public static void main(String[] args) {
         try {
-            String archivo = new Scanner(new File(getArchivo(args))).useDelimiter("\\Z").next();
+            String archivo = new Scanner(new File(getFileName(
+                args, "<archivo>"))).useDelimiter("\\Z").next();
             System.out.println(byteToHex(getMD5(archivo)));
         } catch(java.io.FileNotFoundException e) {
             System.err.println(e);
         }
     }
 
-    public static String getArchivo(String[] args) {
-        if (args.length == 1) {
-            return args[0];
-        } else {
-            System.out.println("Uso: java MD5 <archivo>");
-            return "";
+    public static String getFileName(String[] args, String params) {
+        if (args.length >= 1) return args[0];
+        else {
+            String caller = Thread.currentThread().
+                getStackTrace()[2].getClassName();
+            System.out.format("Uso: java %s %s \n", caller, params);
+            System.exit(1);
+            return null;
         }
     }
 

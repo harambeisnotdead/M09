@@ -1,36 +1,13 @@
 import java.util.Scanner;
-import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
+import java.util.Base64;
 
-class Crypt {
-    /*
-    1- Hacer un programa que lea un fichero de entrada con el siguiente formato:
-
-        nomusuario1:clave1:
-        nomusuario2:clave2:
-        nomusuario3:clave3:
-        nomusuario4:clave4:
-
-        y nos genere un fichero con el siguiente formato:
-
-        nomusuario1:aleatorio de 6 cifras:[hash md5 en base64 de la clave concatenada con el número aleatorio]:
-        nomusuario2:aleatorio de 6 cifras:[hash md5 en base64 de la clave concatenada con el número aleatorio]:
-        nomusuario3:aleatorio de 6 cifras:[hash md5 en base64 de la clave concatenada con el número aleatorio]:
-        nomusuario3:aleatorio de 6 cifras:[hash md5 en base64 de la clave concatenada con el número aleatorio]:
-
-        ---
-
-        2- Hacer un programa que pida un usuario de la lista del fichero anterior y una clave. Accediendo al segundo fichero ha de comprobar si la clave es correcta o no.
-
-        Ayudas:
-
-        Para separar un string en partes, como en el ejemplo:
-
-        String s[] = str.split(":");
-        después de esto tendremos que s[0] es el nomusuario, s[1] es la clave,...
-    */
+public class Crypt {
 
     public static ArrayList<String> readLines(String file) {
         String line;
@@ -46,28 +23,34 @@ class Crypt {
     }
 
     public static int random(int min, int max) {
-        //intervalo efectivo [min, max]
         return (int) (Math.random() * (max-min+1) + min);
     }
 
-    public static String getFileName(String[] args) {
-        if (args.length >= 1) {
-            return args[0];
-        } else {
-            System.out.println("Uso: java Crypt <input>");
-            System.exit(1);
-            return null;
+    public static void writeLines(ArrayList<String> lines, String[] args) {
+        String outputFile = "output.txt";
+        if (args.length > 1) outputFile = args[1];
+        try (Writer writer = new OutputStreamWriter(
+                new FileOutputStream(outputFile), "utf-8")) {
+            String del = ":";
+            for (String line : lines) {
+                String[] fields = line.split(del);
+                String user = fields[0];
+                int salt = random(100000, 999999);
+                String hashMD5Base64 = Base64.getEncoder().encodeToString(
+                    MD5.getMD5(user+salt));
+                writer.write(user + del + salt + del + hashMD5Base64 + "\n");
+            }
+        } catch (java.io.IOException e) {
+            System.err.println("Error al escribir el archivo "+outputFile);
+        } catch (java.lang.ArrayIndexOutOfBoundsException e) {
+            System.err.println(
+                "Una o mas lineas del archivo tienen errores de formato");
         }
     }
 
-    public static void writeLines(String name) {
-        File file;
-
-    }
-
     public static void main(String[] args) {
-        // System.out.println(random(100000, 9999999));
-        System.out.println(readLines(getFileName(args)));
-        writeLines(getFileName(args));
+        ArrayList<String> file = readLines(MD5.getFileName(
+            args, "<archivo> [output]"));
+        writeLines(file, args);
     }
 }
