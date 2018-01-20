@@ -2,45 +2,50 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 
-class Practica02v2 {
-    static int[] v = new int[10];
+class Practica02 {
+    static int size = 1000;
+    static int[] v = new int[size];
     static int index = 0;
+    static CountDownLatch filledSignal = new CountDownLatch(2);
 
     static void fillArray() {
-        while (index<10) {
+        while (index<size) {
             synchronized(v) {
                 int r = ((int) (Math.random() * 6) + 1);
                 v[index] = r;
-                System.out.println("[*] " + Thread.currentThread().getName()
-                + " -> ["+index+"] = "+ r + " - " + v[index]);
                 index++;
             }
-            // try {
-            //     TimeUnit.MILLISECONDS.sleep(100);
-            // } catch (InterruptedException e) {}
         }
+        filledSignal.countDown();
+    }
+    static void shiftOnePos(int i, int f) {
+        for (int j = i; j<f; j++)
+            v[j] = v[j+1];
+        v[f] = 0;
     }
 
-    static void delRepetidos(int i, int f) {
-        System.out.format("[+]\n");
-        if (i < f) {
+    static void delRepeated(int i, int f) {
+        if(i < f) { 
             if (v[i] == v[i+1]) {
-                v[i] = 0;
-                delRepetidos(i+1, f);
-                v[i+1] = 0;
-            } else delRepetidos(i+1, f);
+                shiftOnePos(i, f);
+                delRepeated(i, f-1);
+                shiftOnePos(i, f);
+            } else delRepeated(i+1, f);
         }
     }
 
-    public static void main(String[] args) {
-        System.out.println(Arrays.toString(v));
-        ExecutorService executor = Executors.newFixedThreadPool(3);
+    public static void main(String[] args) throws InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(22);
         executor.submit(() -> fillArray());
         executor.submit(() -> fillArray());
-        executor.submit(() -> delRepetidos(0, 9));
+        filledSignal.await(500, TimeUnit.MILLISECONDS);
+        System.out.println(Arrays.toString(v) + '\n');
+        executor.submit(() -> delRepeated(0, size-1));
         executor.shutdown();
-        while(!executor.isTerminated()) executor.shutdownNow();
-        if (executor.isTerminated()) System.out.println(Arrays.toString(v));
+        while(!executor.isTerminated())
+            executor.shutdownNow();
+        System.out.println(Arrays.toString(v));
     }
 }
